@@ -238,4 +238,10 @@ public interface PermissionsService {
      * @throws UnauthorizedException the requesting user does not have the required permissions.
      */
     PermissionDefinition userPermissions(String email, Session session) throws IOException, NotFoundException, UnauthorizedException;
+
+    void clean() throws IOException;
+
+
+    void addViewerTeams(String collectionID, Set<Team> team, Session session) throws IOException, ZebedeeException;
+
 }

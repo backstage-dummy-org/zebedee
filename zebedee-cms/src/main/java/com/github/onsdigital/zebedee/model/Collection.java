@@ -77,7 +77,6 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 
-import static com.github.onsdigital.zebedee.configuration.CMSFeatureFlags.cmsFeatureFlags;
 import static com.github.onsdigital.zebedee.logging.CMSLogEvent.error;
 import static com.github.onsdigital.zebedee.logging.CMSLogEvent.info;
 import static com.github.onsdigital.zebedee.logging.CMSLogEvent.warn;
@@ -219,10 +218,11 @@ public class Collection {
                 collectionCreated(collectionDescription));
 
         if (collectionDescription.getTeams() != null) {
+            Set<Team> teamsToAdd = new HashSet<>();
             for (String teamName : collectionDescription.getTeams()) {
-                Team team = zebedee.getTeamsService().findTeam(teamName);
-                zebedee.getPermissionsService().addViewerTeam(collectionDescription, team, session);
+                teamsToAdd.add(zebedee.getTeamsService().findTeam(teamName));
             }
+            zebedee.getPermissionsService().addViewerTeams(collectionDescription.getId(), teamsToAdd, session);
         }
 
         // Encryption

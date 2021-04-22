@@ -133,6 +133,12 @@ public class Root {
             error().logException(ex, "error cleaning stale collection keys from users exiting application");
         }
 
+        try {
+            zebedee.getPermissionsService().clean();
+        } catch (Exception ex) {
+            error().logException(ex, "error cleaning stale access mapping entries");
+        }
+
         info().data(ZEBEDEE_ROOT, rootDir).log("zebedee cmd initialization completed successfully");
     }
     /**

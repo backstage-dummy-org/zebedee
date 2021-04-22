@@ -13,9 +13,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.concurrent.locks.ReentrantLock;
 
+import static com.github.onsdigital.logging.v2.event.SimpleEvent.error;
 import static com.github.onsdigital.logging.v2.event.SimpleEvent.info;
 
 /**
@@ -32,7 +32,9 @@ public class PermissionsStoreFileSystemImpl implements PermissionsStore {
 
     private Path accessMappingPath;
     private Path accessMappingFilePath;
-    private ReadWriteLock accessMappingLock = new ReentrantReadWriteLock();
+    //private ReadWriteLock accessMappingLock = new ReentrantReadWriteLock();
+
+    private static final ReentrantLock mutex = new ReentrantLock();
 
     /**
      * Check if an {@link AccessMapping} json file exists in the permissions directory. If not a new empty instance
@@ -42,17 +44,23 @@ public class PermissionsStoreFileSystemImpl implements PermissionsStore {
      * @throws IOException error while initializing.
      */
     public static void initialisePermissions(Path accessMappingPath) throws IOException {
-        Path jsonPath = accessMappingPath.resolve(PERMISSIONS_FILE);
+        mutex.lock();
 
-        if (!Files.exists(jsonPath)) {
-            info().log("AccessMapping file does not yet exist. Empty one will be created.");
+        try {
+            Path jsonPath = accessMappingPath.resolve(PERMISSIONS_FILE);
 
-            jsonPath.toFile().createNewFile();
-            try (OutputStream output = Files.newOutputStream(jsonPath)) {
-                Serialiser.serialise(output, new AccessMapping());
+            if (!Files.exists(jsonPath)) {
+                info().log("AccessMapping file does not yet exist. Empty one will be created.");
+
+                jsonPath.toFile().createNewFile();
+                try (OutputStream output = Files.newOutputStream(jsonPath)) {
+                    Serialiser.serialise(output, new AccessMapping());
+                }
+            } else {
+                //  migrateDataVisUsers(jsonPath);
             }
-        } else {
-            migrateDataVisUsers(jsonPath);
+        } finally {
+            mutex.unlock();
         }
     }
 
@@ -104,30 +112,86 @@ public class PermissionsStoreFileSystemImpl implements PermissionsStore {
 
     @Override
     public AccessMapping getAccessMapping() throws IOException {
-        AccessMapping result = null;
+        return read();
+    }
 
-        if (Files.exists(accessMappingFilePath)) {
+    @Override
+    public void saveAccessMapping(AccessMapping accessMapping) throws IOException {
+       mutex.lock();
+       error().data("threadID", Thread.currentThread().getId()).log("saving access mapping");
+        try (OutputStream output = Files.newOutputStream(accessMappingFilePath)) {
+            Serialiser.serialise(output, accessMapping);
+        } catch (Exception ex) {
+            throw new IOException(ex);
+        } finally {
+            mutex.unlock();
+        }
+    }
 
-            // Read the configuration
-            accessMappingLock.readLock().lock();
-            try (InputStream input = Files.newInputStream(accessMappingFilePath)) {
-                result = Serialiser.deserialise(input, AccessMapping.class);
-            } finally {
-                accessMappingLock.readLock().unlock();
+    @Override
+    public Set<Integer> getCollectionTeams(String collectionID) throws IOException {
+        mutex.lock();
+        error().data("threadID", Thread.currentThread().getId()).log("getCollectionTeams");
+        try {
+            AccessMapping mapping = read();
+            if (mapping == null) {
+                return null;
+            }
+            return mapping.getCollections().get(collectionID);
+        } finally {
+            mutex.unlock();
+        }
+    }
+
+    @Override
+    public void addViewerTeams(String collectionID, Set<Integer> teamIDs) throws IOException {
+        mutex.lock();
+        error().data("threadID", Thread.currentThread().getId()).log("getCollectionTeams");
+        try {
+            AccessMapping accessMapping = read();
+           if (accessMapping.getCollections().get(collectionID) == null) {
+               accessMapping.getCollections().put(collectionID, new HashSet<>());
             }
 
-            // Initialise any missing objects:
-            if (result.getAdministrators() == null) {
-                result.setAdministrators(new HashSet<>());
-            }
-            if (result.getDigitalPublishingTeam() == null) {
-                result.setDigitalPublishingTeam(new HashSet<>());
-            }
-            if (result.getCollections() == null) {
-                result.setCollections(new HashMap<>());
-            }
+            accessMapping.getCollections().get(collectionID).addAll(teamIDs);
 
-        } else {
+            write(accessMapping);
+        } catch (Exception ex) {
+            throw new IOException(ex);
+        } finally {
+            mutex.unlock();
+        }
+    }
+
+    private AccessMapping read() throws IOException {
+        mutex.lock();
+        error().data("threadID", Thread.currentThread().getId()).log("read");
+        try {
+            AccessMapping result = null;
+
+            if (Files.exists(accessMappingFilePath)) {
+
+                // Read the configuration
+                //accessMappingLock.readLock().lock();
+                try (InputStream input = Files.newInputStream(accessMappingFilePath)) {
+                    result = Serialiser.deserialise(input, AccessMapping.class);
+                } finally {
+                    //  accessMappingLock.readLock().unlock();
+                }
+
+                // Initialise any missing objects:
+                if (result.getAdministrators() == null) {
+                    result.setAdministrators(new HashSet<>());
+                }
+                if (result.getDigitalPublishingTeam() == null) {
+                    result.setDigitalPublishingTeam(new HashSet<>());
+                }
+                if (result.getCollections() == null) {
+                    result.setCollections(new HashMap<>());
+                }
+
+                return result;
+            }
 
             // Or generate a new one:
             result = new AccessMapping();
@@ -135,18 +199,25 @@ public class PermissionsStoreFileSystemImpl implements PermissionsStore {
             result.setDigitalPublishingTeam(new HashSet<>());
             result.setCollections(new HashMap<>());
             saveAccessMapping(result);
-        }
 
-        return result;
+            return result;
+        } catch (Exception ex) {
+            throw new IOException(ex);
+        } finally {
+            mutex.unlock();
+        }
     }
 
-    @Override
-    public void saveAccessMapping(AccessMapping accessMapping) throws IOException {
-        accessMappingLock.writeLock().lock();
+    private void write(AccessMapping accessMapping) throws IOException {
+        mutex.lock();
+        error().data("threadID", Thread.currentThread().getId()).log("write");
         try (OutputStream output = Files.newOutputStream(accessMappingFilePath)) {
             Serialiser.serialise(output, accessMapping);
+        } catch (Exception ex) {
+            throw new IOException(ex);
         } finally {
-            accessMappingLock.writeLock().unlock();
+            mutex.unlock();
         }
+
     }
 }

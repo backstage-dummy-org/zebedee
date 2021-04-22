@@ -1,5 +1,6 @@
 package com.github.onsdigital.zebedee.permissions.service;
 
+import com.github.onsdigital.zebedee.api.Root;
 import com.github.onsdigital.zebedee.exceptions.BadRequestException;
 import com.github.onsdigital.zebedee.exceptions.NotFoundException;
 import com.github.onsdigital.zebedee.exceptions.UnauthorizedException;
@@ -7,6 +8,7 @@ import com.github.onsdigital.zebedee.exceptions.ZebedeeException;
 import com.github.onsdigital.zebedee.json.CollectionDescription;
 import com.github.onsdigital.zebedee.json.PermissionDefinition;
 import com.github.onsdigital.zebedee.model.Collection;
+import com.github.onsdigital.zebedee.model.Collections;
 import com.github.onsdigital.zebedee.model.KeyManager;
 import com.github.onsdigital.zebedee.model.KeyringCache;
 import com.github.onsdigital.zebedee.model.PathUtils;
@@ -28,14 +30,14 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 
+import static com.github.onsdigital.logging.v2.event.SimpleEvent.error;
 import static com.github.onsdigital.zebedee.configuration.Configuration.getUnauthorizedMessage;
+import static com.github.onsdigital.zebedee.logging.CMSLogEvent.warn;
 import static com.github.onsdigital.zebedee.persistence.CollectionEventType.COLLECTION_VIEWER_TEAM_ADDED;
 import static com.github.onsdigital.zebedee.persistence.CollectionEventType.COLLECTION_VIEWER_TEAM_REMOVED;
 import static com.github.onsdigital.zebedee.persistence.dao.CollectionHistoryDaoFactory.getCollectionHistoryDao;
 import static com.github.onsdigital.zebedee.persistence.model.CollectionEventMetaData.teamAdded;
 import static com.github.onsdigital.zebedee.persistence.model.CollectionEventMetaData.teamRemoved;
-
-import static com.github.onsdigital.logging.v2.event.SimpleEvent.error;
 
 /**
  * Handles permissions mapping between users and {@link com.github.onsdigital.zebedee.Zebedee} functions.
@@ -560,6 +562,38 @@ public class PermissionsServiceImpl implements PermissionsService {
         if (session != null && user.keyring() != null) {
             KeyManager.transferKeyring(user.keyring(), keyringCache.get(session));
             usersServiceSupplier.getService().updateKeyring(user);
+        }
+    }
+
+    public void clean() throws IOException {
+        Collections.CollectionList list = Root.zebedee.getCollections().list();
+        AccessMapping accessMapping = permissionsStore.getAccessMapping();
+
+        List<String> toRemove = accessMapping.getCollections()
+                .keySet()
+                .stream()
+                .filter(c -> list.getCollection(c) == null)
+                .collect(Collectors.toList());
+
+
+        toRemove.stream().forEach(id -> {
+            warn().collectionID(id).log("removing stale entry from collection access mapping");
+            accessMapping.getCollections().remove(id);
+        });
+
+        permissionsStore.saveAccessMapping(accessMapping);
+    }
+
+    @Override
+    public void addViewerTeams(String collectionID, Set<Team> teams, Session session) throws IOException,
+            ZebedeeException {
+        if (session == null || !canEdit(session.getEmail())) {
+            throw new UnauthorizedException(getUnauthorizedMessage(session));
+        }
+
+        if (teams != null) {
+            Set<Integer> teamIDs = teams.stream().map(t -> t.getId()).collect(Collectors.toSet());
+            permissionsStore.addViewerTeams(collectionID, teamIDs);
         }
     }
 }

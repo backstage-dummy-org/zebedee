@@ -17,6 +17,7 @@ import com.github.onsdigital.zebedee.json.ApprovalStatus;
 import com.github.onsdigital.zebedee.json.CollectionDescription;
 import com.github.onsdigital.zebedee.json.Event;
 import com.github.onsdigital.zebedee.json.EventType;
+import com.github.onsdigital.zebedee.keyring.KeyringUtil;
 import com.github.onsdigital.zebedee.logging.CMSLogEvent;
 import com.github.onsdigital.zebedee.model.approval.ApprovalQueue;
 import com.github.onsdigital.zebedee.model.approval.ApproveTask;
@@ -32,6 +33,7 @@ import com.github.onsdigital.zebedee.reader.CollectionReader;
 import com.github.onsdigital.zebedee.reader.ContentReader;
 import com.github.onsdigital.zebedee.reader.FileSystemContentReader;
 import com.github.onsdigital.zebedee.session.model.Session;
+import com.github.onsdigital.zebedee.user.model.User;
 import com.github.onsdigital.zebedee.util.ZebedeeCmsService;
 import com.github.onsdigital.zebedee.util.versioning.VersionNotFoundException;
 import com.github.onsdigital.zebedee.util.versioning.VersionsService;
@@ -563,8 +565,12 @@ public class Collections {
             throw new BadRequestException("The collection is not empty.");
         }
 
+        User user = KeyringUtil.getUser(zebedeeSupplier.get().getUsersService(), session.getEmail());
+        zebedeeSupplier.get().getCollectionKeyring().remove(user, collection);
+
         // Go ahead
         collection.delete();
+
         collectionHistoryDaoSupplier.get().saveCollectionHistoryEvent(collection, session, COLLECTION_DELETED);
     }
 

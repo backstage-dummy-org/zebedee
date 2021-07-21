@@ -18,6 +18,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.GET;
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 
 import static com.github.onsdigital.zebedee.keyring.KeyringUtil.getUser;
@@ -64,7 +66,10 @@ public class ListKeyring {
     public Set<String> listUserKeys(HttpServletRequest request, HttpServletResponse response) throws ZebedeeException {
         checkPermission(getSession(request));
         User user = getUser(usersService, getEmail(request));
-        return listKeyring(user);
+
+        return listKeyring(user)
+                .orElse(new HashSet<>());
+
     }
 
     Session getSession(HttpServletRequest request) throws UnauthorizedException, InternalServerError {
@@ -107,9 +112,9 @@ public class ListKeyring {
         return email;
     }
 
-    Set<String> listKeyring(User user) throws InternalServerError {
+    Optional<Set<String>> listKeyring(User user) throws InternalServerError {
         try {
-            return keyring.list(user);
+            return Optional.ofNullable(keyring.list(user));
         } catch (KeyringException ex) {
             error().user(user.getEmail()).exception(ex).log("error listing user keyring");
             throw new InternalServerError("internal server error");

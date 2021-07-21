@@ -7,6 +7,7 @@ import com.github.onsdigital.zebedee.exceptions.ZebedeeException;
 import com.github.onsdigital.zebedee.json.CollectionDescription;
 import com.github.onsdigital.zebedee.json.PermissionDefinition;
 import com.github.onsdigital.zebedee.model.Collection;
+import com.github.onsdigital.zebedee.model.Collections;
 import com.github.onsdigital.zebedee.model.PathUtils;
 import com.github.onsdigital.zebedee.permissions.model.AccessMapping;
 import com.github.onsdigital.zebedee.permissions.store.PermissionsStore;
@@ -505,5 +506,19 @@ public class PermissionsServiceImpl implements PermissionsService {
                 .filter(entry -> entry.getValue() != null && entry.getValue().contains(t.getId()))
                 .map(entry -> entry.getKey())
                 .collect(Collectors.toSet());
+    }
+
+    @Override
+    public Set<Collection> getCollectionsAccessibleByUser(User user, Collections.CollectionList collectionList)
+            throws IOException {
+        if (user == null) {
+            throw new IOException("user required but was null");
+        }
+
+        if (StringUtils.isEmpty(user.getEmail())) {
+            throw new IOException("user.email required but was null/empty");
+        }
+
+        return null;
     }
 }

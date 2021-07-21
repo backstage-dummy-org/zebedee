@@ -792,7 +792,7 @@ public class KeyringMigratorImplTest {
 
         // Then legacy keyring is unlocked
         verify(legacyKeyring, times(1)).unlock(user, "1234");
-        verifyZeroInteractions(centralKeyring);
+        verify(centralKeyring, times(1)).unlock(user, "1234");
     }
 
     @Test
@@ -805,7 +805,7 @@ public class KeyringMigratorImplTest {
 
         // Then central keyring is unlocked
         verify(centralKeyring, times(1)).unlock(user, "1234");
-        verifyZeroInteractions(legacyKeyring);
+        verify(legacyKeyring, times(1)).unlock(user, "1234");
     }
 
     @Test
@@ -849,7 +849,7 @@ public class KeyringMigratorImplTest {
         assertWrappedException(actual, UNLOCK_KEYRING_ERR, enabled);
 
         verify(centralKeyring, times(1)).unlock(user, password);
-        verifyZeroInteractions(legacyKeyring);
+        verify(legacyKeyring, times(1)).unlock(user, password);
     }
 
 

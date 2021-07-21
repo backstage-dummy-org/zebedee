@@ -34,6 +34,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static com.github.onsdigital.zebedee.keyring.KeyringUtil.getUser;
+import static com.github.onsdigital.zebedee.logging.CMSLogEvent.info;
 
 /**
  * Created by thomasridd on 28/04/15.
@@ -196,6 +197,8 @@ public class Teams {
                 .team(teamName)
                 .actionedBy(session.getEmail())
                 .log();
+
+        info().data("team", teamName).user(session).log("preview team deleted successfully");
         return true;
     }
 

@@ -7,6 +7,7 @@ import com.github.onsdigital.zebedee.exceptions.ZebedeeException;
 import com.github.onsdigital.zebedee.json.CollectionDescription;
 import com.github.onsdigital.zebedee.json.PermissionDefinition;
 import com.github.onsdigital.zebedee.model.Collection;
+import com.github.onsdigital.zebedee.model.Collections;
 import com.github.onsdigital.zebedee.session.model.Session;
 import com.github.onsdigital.zebedee.teams.model.Team;
 import com.github.onsdigital.zebedee.user.model.User;
@@ -227,4 +228,13 @@ public interface PermissionsService {
      * @throws IOException problem filters the collections.
      */
     Set<String> listCollectionsAccessibleByTeam(Team t) throws IOException;
+
+    /**
+     *
+     * @param user
+     * @param collectionList
+     * @return
+     * @throws IOException
+     */
+    Set<Collection> getCollectionsAccessibleByUser(User user, Collections.CollectionList collectionList) throws IOException;
 }

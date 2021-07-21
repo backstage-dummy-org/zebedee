@@ -836,14 +836,22 @@ public class CollectionsTest {
                 .thenReturn(true);
         when(collectionMock.isEmpty())
                 .thenReturn(true);
+        when(zebedeeMock.getUsersService())
+                .thenReturn(usersServiceMock);
+        when(usersServiceMock.getUserByEmail(anyString()))
+                .thenReturn(testUser);
+        when(zebedeeMock.getCollectionKeyring())
+                .thenReturn(keyring);
 
         collections.delete(collectionMock, sessionMock);
 
         verify(permissionsServiceMock, times(1)).canEdit(sessionMock);
         verify(collectionMock, times(1)).isEmpty();
         verify(collectionMock, times(1)).delete();
+        verify(keyring, times(1)).remove(testUser, collectionMock);
         verify(collectionHistoryDaoMock, times(1)).saveCollectionHistoryEvent(eq(collectionMock), eq(sessionMock),
                 eq(COLLECTION_DELETED));
+
     }
 
     @Test(expected = BadRequestException.class)

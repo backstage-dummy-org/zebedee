@@ -65,7 +65,7 @@ public class PermissionsServiceImplTest {
     private Team teamMock;
 
     @Mock
-    private Collection collectionMock;
+    private Collection collection1, collection2;
 
     @Mock
     private CollectionDescription collectionDescription;
@@ -483,7 +483,7 @@ public class PermissionsServiceImplTest {
         when(accessMapping.getAdministrators())
                 .thenReturn(admins);
 
-        List<User> result = permissions.getCollectionAccessMapping(collectionMock);
+        List<User> result = permissions.getCollectionAccessMapping(collection1);
 
         verify(permissionsStore, times(1)).getAccessMapping();
         verify(teamsService, times(1)).listTeams();
@@ -509,10 +509,10 @@ public class PermissionsServiceImplTest {
                 .thenReturn(admins);
         when(accessMapping.getDigitalPublishingTeam())
                 .thenReturn(digitalPublishingTeam);
-        when(collectionMock.getDescription())
+        when(collection1.getDescription())
                 .thenReturn(collectionDescription);
 
-        List<User> result = permissions.getCollectionAccessMapping(collectionMock);
+        List<User> result = permissions.getCollectionAccessMapping(collection1);
 
         assertThat(result, equalTo(expected));
         verify(permissionsStore, times(2)).getAccessMapping();
@@ -725,6 +725,44 @@ public class PermissionsServiceImplTest {
         assertTrue(actual.contains("aaaa"));
         assertTrue(actual.contains("cccc"));
 
+    }
+
+    @Test
+    public void getCollectionsAccessibleByUser_userNull_shouldThrowEx() throws Exception {
+        IOException actual = assertThrows(IOException.class,
+                () -> permissions.getCollectionsAccessibleByUser(null, null));
+
+        assertThat(actual.getMessage(), equalTo("user required but was null"));
+    }
+
+    @Test
+    public void getCollectionsAccessibleByUser_userEmailNull_shouldThrowEx() throws Exception {
+        when(userMock.getEmail())
+                .thenReturn(null);
+
+        IOException actual = assertThrows(IOException.class,
+                () -> permissions.getCollectionsAccessibleByUser(userMock, null));
+
+        assertThat(actual.getMessage(), equalTo("user.email required but was null/empty"));
+    }
+
+    @Test
+    public void getCollectionsAccessibleByUser_userEmailEmpty_shouldThrowEx() throws Exception {
+        when(userMock.getEmail())
+                .thenReturn("");
+
+        IOException actual = assertThrows(IOException.class,
+                () -> permissions.getCollectionsAccessibleByUser(userMock, null));
+
+        assertThat(actual.getMessage(), equalTo("user.email required but was null/empty"));
+    }
+
+    @Test
+    public void getCollectionsAccessibleByUser_adminUser_shouldReturnAllCollections() throws Exception {
+        IOException actual = assertThrows(IOException.class,
+                () -> permissions.getCollectionsAccessibleByUser(userMock, null));
+
+        assertThat(actual.getMessage(), equalTo("user.email required but was null/empty"));
     }
 
 

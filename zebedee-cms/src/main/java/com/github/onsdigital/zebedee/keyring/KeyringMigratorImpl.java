@@ -192,7 +192,8 @@ public class KeyringMigratorImpl implements Keyring {
     @Override
     public void unlock(User user, String password) throws KeyringException {
         try {
-            getKeyring().unlock(user, password);
+            legacyKeyring.unlock(user, password);
+            centralKeyring.unlock(user, password);
         } catch (KeyringException ex) {
             throw wrappedKeyringException(ex, UNLOCK_KEYRING_ERR);
         }

@@ -1,15 +1,19 @@
 package com.github.onsdigital.zebedee.keyring;
 
+import com.github.onsdigital.zebedee.api.Root;
 import com.github.onsdigital.zebedee.json.CollectionDescription;
 import com.github.onsdigital.zebedee.keyring.cache.KeyringCache;
 import com.github.onsdigital.zebedee.model.Collection;
+import com.github.onsdigital.zebedee.model.Collections;
 import com.github.onsdigital.zebedee.permissions.service.PermissionsService;
 import com.github.onsdigital.zebedee.user.model.User;
 import org.apache.commons.lang3.StringUtils;
 
 import javax.crypto.SecretKey;
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -126,19 +130,42 @@ public class CentralKeyringImpl implements Keyring {
     @Override
     public Set<String> list(User user) throws KeyringException {
         validateUser(user);
-        boolean hasPermission = hasEditPermissions(user);
 
-        if (!hasPermission) {
-            return null;
+        if (hasEditPermissions(user)) {
+            return cache.list();
         }
 
-        return cache.list();
+        Collections.CollectionList collectionList = null;
+        try {
+           collectionList = Root.zebedee.getCollections().list();
+        } catch (Exception ex) {
+            throw new KeyringException(ex);
+        }
+
+        Set<String> results = new HashSet<>();
+
+        for (Collection collection : collectionList) {
+            try {
+                List<User> users = permissionsService.getCollectionAccessMapping(collection);
+                Optional<User> result = users
+                        .stream()
+                        .filter(u -> u.getEmail().equals(user.getEmail()))
+                        .findFirst();
+
+                if (result.isPresent()) {
+                    results.add(collection.getId());
+                }
+            } catch (Exception ex) {
+                throw new KeyringException(ex);
+            }
+        }
+
+        return results;
     }
 
     /**
      * <b>Do nothing.</b>
      * <p>This method is defined in order to maintain backwards compatability. This functionality is not
-     * required in the new central keyring design so when called we do nothing.</p>
      * This method will be removed once we have fully migrated to the central keyring implementation.
      *
      * @param user     the user the keyring belongs to.
@@ -204,7 +231,7 @@ public class CentralKeyringImpl implements Keyring {
 
     private boolean hasEditPermissions(User user) throws KeyringException {
         try {
-            return permissionsService.canEdit(user.getEmail());
+            return permissionsService.isAdministrator(user.getEmail()) || permissionsService.canEdit(user.getEmail());
         } catch (IOException ex) {
             throw new KeyringException(ex);
         }

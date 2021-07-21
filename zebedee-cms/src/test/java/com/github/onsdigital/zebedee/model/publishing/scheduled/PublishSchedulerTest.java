@@ -1,5 +1,6 @@
 package com.github.onsdigital.zebedee.model.publishing.scheduled;
 
+import com.github.onsdigital.zebedee.Zebedee;
 import com.github.onsdigital.zebedee.ZebedeeTestBaseFixture;
 import com.github.onsdigital.zebedee.exceptions.ZebedeeException;
 import com.github.onsdigital.zebedee.json.ApprovalStatus;
@@ -10,10 +11,18 @@ import com.github.onsdigital.zebedee.session.model.Session;
 import org.joda.time.DateTime;
 import org.junit.Assert;
 import org.junit.Test;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.io.IOException;
 import java.util.Date;
 import java.util.List;
+import java.util.function.Supplier;
+
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class PublishSchedulerTest extends ZebedeeTestBaseFixture {
 
@@ -91,6 +100,18 @@ public class PublishSchedulerTest extends ZebedeeTestBaseFixture {
         Collection collection = Collection.create(description, zebedee, session);
         Date startDate = description.getPublishDate();
         Date prePublishStartDate = new DateTime(description.getPublishDate()).minusSeconds(1).toDate();
+
+        Zebedee mockZeb = mock(Zebedee.class);
+        Supplier<Zebedee> zebSup = () -> mockZeb;
+        ReflectionTestUtils.setField(zebedee.getCollections(), "zebedeeSupplier", zebSup);
+
+        when(mockZeb.getUsersService())
+                .thenReturn(usersService);
+        when(usersService.getUserByEmail(any()))
+                .thenReturn(user);
+        when(mockZeb.getCollectionKeyring())
+                .thenReturn(collectionKeyring);
+
         scheduler.schedulePrePublish(collection, zebedee, prePublishStartDate, startDate);
         zebedee.getCollections().delete(collection, session);
 
@@ -103,6 +124,7 @@ public class PublishSchedulerTest extends ZebedeeTestBaseFixture {
         ScheduledPublishTaskData taskData = prePublishTaskData.get(0);
         Assert.assertNotNull(taskData);
         Assert.assertFalse(taskData.collectionIds.contains(description.getId()));
+        verify(collectionKeyring, times(1)).remove(user, collection);
     }
 
     @Test
@@ -114,6 +136,17 @@ public class PublishSchedulerTest extends ZebedeeTestBaseFixture {
         description.setApprovalStatus(ApprovalStatus.COMPLETE);
         description.setPublishDate(DateTime.now().plusSeconds(2000).toDate());
         Collection collection = Collection.create(description, zebedee, session);
+
+        Zebedee mockZeb = mock(Zebedee.class);
+        Supplier<Zebedee> zebSup = () -> mockZeb;
+        ReflectionTestUtils.setField(zebedee.getCollections(), "zebedeeSupplier", zebSup);
+
+        when(mockZeb.getUsersService())
+                .thenReturn(usersService);
+        when(usersService.getUserByEmail(any()))
+                .thenReturn(user);
+        when(mockZeb.getCollectionKeyring())
+                .thenReturn(collectionKeyring);
 
         Date startDate = description.getPublishDate();
         Date prePublishStartDate = new DateTime(description.getPublishDate()).minusSeconds(1).toDate();
@@ -127,6 +160,7 @@ public class PublishSchedulerTest extends ZebedeeTestBaseFixture {
         Assert.assertNotNull(prePublishTaskData);
         ScheduledPublishTaskData taskData = prePublishTaskData.get(0);
         Assert.assertNotNull(taskData);
+        verify(collectionKeyring, times(1)).remove(user, collection);
     }
 
     @Test

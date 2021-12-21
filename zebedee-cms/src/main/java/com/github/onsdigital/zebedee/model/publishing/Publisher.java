@@ -7,6 +7,7 @@ import com.github.onsdigital.zebedee.api.Root;
 import com.github.onsdigital.zebedee.configuration.CMSFeatureFlags;
 import com.github.onsdigital.zebedee.configuration.Configuration;
 import com.github.onsdigital.zebedee.json.ApprovalStatus;
+import com.github.onsdigital.zebedee.json.ContentDetail;
 import com.github.onsdigital.zebedee.json.Event;
 import com.github.onsdigital.zebedee.json.EventType;
 import com.github.onsdigital.zebedee.json.publishing.Result;
@@ -760,17 +761,24 @@ public class Publisher {
 
     private static void sendToKafka(Collection collection) throws IOException {
 
-        List<String> uris;
-        if ((collection.getDatasetDetails() != null) && !collection.getDatasetDetails().isEmpty()) {
-            uris = collection.getDatasetDetails()
-                    .stream().map(temp -> convertUriForEvent(temp.uri))
-                    .collect(Collectors.toList());
+        List<String> uris = new ArrayList<>();
+
+        //Daetaset URIs
+        if ((collection.getDatasetVersionDetails() != null) && !collection.getDatasetVersionDetails().isEmpty()) {
+            List<ContentDetail> datasetContents = collection.getDatasetVersionDetails();
+            for (ContentDetail datasetContent : datasetContents) {
+                uris.add(convertUriForEvent(datasetContent.uri));
+            }
+           info().data("dataset uris", uris).log("uris for dataset change scenario");
+        }
+
+        //Reviewed URIs
+        if (collection.getReviewed().uris() != null && collection.getReviewed().uris().isEmpty()){
+            List<String> uriContents = collection.getReviewed().uris();
+            for (String uriContent : uriContents){
+                uris.add(convertUriForEvent(uriContent));
+            }
             info().data("uris", uris).log("uris for dataset change scenario");
-        } else {
-            uris = collection.getReviewed().uris()
-                    .stream().map((temp) -> convertUriForEvent(temp))
-                    .collect(Collectors.toList());
-            info().data("uris", uris).log("uris for other change scenario");
         }
 
         info().data("collectionId", collection.getId())

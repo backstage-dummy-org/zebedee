@@ -50,7 +50,7 @@ public class ReleasePopulator {
             addRelatedDocument(release, contentDetail);
             break;
         case DATASET_LANDING_PAGE:
-        case API_DATASET_LANDING_PAGE:
+        case API_DATASET:
             info().data("contentTitle", contentDetail.description.title)
                     .data("releaseTitle", release.getDescription().getTitle())
                     .log("Adding dataset as a link to release");

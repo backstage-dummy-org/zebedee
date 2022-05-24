@@ -284,6 +284,8 @@ public class Collection {
             throw new NotFoundException("The collection you are trying to delete was not found");
         }
 
+        //soft-delete any interactives
+
         deleteCollection(collection, session);
 
         Audit.Event.COLLECTION_DELETED

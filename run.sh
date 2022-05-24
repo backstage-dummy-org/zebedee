@@ -22,6 +22,7 @@ export KEYRING_INIT_VECTOR="RkL9MmjfRcPB86alO82gHQ=="
 
 export DATASET_API_URL="http://localhost:22000"
 export DATASET_API_AUTH_TOKEN="FD0108EA-825D-411C-9B1D-41EF7727F465"
+export website_reindex_key="1hZiEDeZcVKZwO6WmTDTDhVSiRAKS0jM6Nzlvlszk0OW0vY5M2FCiGD7ncqcucxB"
 
 # Development: reloadable
 mvn clean package dependency:copy-dependencies -Dmaven.test.skip=true -Dossindex.skip=true && \

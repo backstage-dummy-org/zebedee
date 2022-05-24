@@ -124,6 +124,9 @@ public class ApproveTask implements Callable<Boolean> {
             eventLog.resolvedDetails();
 
             if (cmsFeatureFlags().isEnableDatasetImport()) {
+                collectionContent.addAll(collection.getInteractiveDetails());
+                eventLog.addInteractiveDetails();
+
                 collectionContent.addAll(collection.getDatasetDetails());
                 eventLog.addDatasetDetails();
 

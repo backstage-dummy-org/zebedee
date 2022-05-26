@@ -105,4 +105,15 @@ public class InteractivesServiceImpl implements InteractivesService {
         collection.getDescription().removeInteractive(existingInteractive.get());
         collection.save();
     }
+
+    @Override
+    public void publishCollection(Collection collection) throws RuntimeException {
+        String collectionId = collection.getDescription().getId();
+
+        if (collectionId == null || collectionId.isEmpty()) {
+            throw new IllegalArgumentException("a collectionId must be set in the collection being published");
+        }
+
+        interactivesClient.publishCollection(collectionId);
+    }
 }

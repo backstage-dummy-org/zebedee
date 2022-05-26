@@ -17,4 +17,5 @@ public interface InteractivesService {
      */
     CollectionInteractive updateInteractiveInCollection(Collection collection, String id, CollectionInteractive updatedInteractive, String user) throws ZebedeeException, IOException, DatasetAPIException;
     void removeInteractiveFromCollection(Collection collection, String interactiveID) throws IOException, DatasetAPIException;
+    void publishCollection(Collection collection) throws RuntimeException;
 }

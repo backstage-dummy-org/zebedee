@@ -1,0 +1,14 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  title: "Zebedee"
+  name: "zebedee"
+  description: "The CMS used by the ONS website"
+  annotations:
+    github.com/project-slug: backstage-dummy-org/zebedee
+    backstage.io/techdocs-ref: dir:.
+spec:
+  type: service
+  lifecycle: production
+  owner: "Digital Publishing"
+  

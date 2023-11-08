@@ -9,7 +9,7 @@ metadata:
     - html
   annotations:
     github.com/project-slug: backstage-dummy-org/zebedee
-    backstage.io/techdocs-ref: dir:.
+    # backstage.io/techdocs-ref: dir:.
   links:
   - title: ONS Website
     url: https://www.ons.gov.uk/
